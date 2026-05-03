@@ -277,21 +277,17 @@
     logDiv.textContent = '下載中...';
 
     try {
-      logDiv.textContent = '正在 fetch: ' + PUBLISHED_CSV_URL;
       const response = await fetch(PUBLISHED_CSV_URL, {
         method: 'GET',
         redirect: 'follow',
         mode: 'cors',
       });
 
-      logDiv.textContent = 'HTTP狀態: ' + response.status + ' / ok: ' + response.ok;
       if (!response.ok) throw new Error('HTTP ' + response.status);
 
       const csvText = await response.text();
-      logDiv.textContent = '收到數據長度: ' + csvText.length + ' / 頭10字: ' + csvText.substring(0,50);
-      
-      if (!csvText || csvText.length < 50) throw new Error('數據太少: ' + csvText.length + '字元');
-      if (csvText.trim().startsWith('<')) throw new Error('收到HTML而非CSV，頭100字: ' + csvText.substring(0,100));
+      if (!csvText || csvText.length < 50) throw new Error('數據太少，可能權限未開放');
+      if (csvText.trim().startsWith('<')) throw new Error('收到 HTML 而非 CSV — 請確認 Spreadsheet 已公開分享');
 
       parseMasterCSV(csvText);
       statusSpan.innerHTML = `<span class="status-dot dot-green"></span> ✅ 已載入 ${skuIndexList.length} 項貨品`;
