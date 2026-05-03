@@ -463,16 +463,27 @@
   }
 
   function matchProductWithSKU(item) {
-    const query = item.name.toLowerCase();
+    const query = item.name.toLowerCase().replace(/\s+/g, '');
+    // 1. 完全配 SKU
     let exactSkuMatch = skuIndexList.find(s => s.sku.toLowerCase() === query);
     if (exactSkuMatch) return buildMatchResult(item, exactSkuMatch.sku);
-    let exactNameMatch = skuIndexList.filter(s => s.name.toLowerCase() === query);
+    // 2. 完全配統一貨名
+    let exactNameMatch = skuIndexList.filter(s => s.name.toLowerCase().replace(/\s+/g, '') === query);
     if (exactNameMatch.length === 1) return buildMatchResult(item, exactNameMatch[0].sku);
+    // 3. 模糊匹配（雙向包含）
     let candidates = skuIndexList.filter(s => {
-      if (s.name.toLowerCase().includes(query)) return true;
+      const sName = s.name.toLowerCase().replace(/\s+/g, '');
       const prod = productMaster[s.sku];
-      if (prod && prod.aliasStr && prod.aliasStr.toLowerCase().includes(query)) return true;
-      return s.sku.toLowerCase().includes(query);
+      const aliasStr = prod && prod.aliasStr ? prod.aliasStr.toLowerCase().replace(/\s+/g, '') : '';
+      // query 包含 name（例：「天龍雪菜粒」包含「雪菜粒」）
+      if (sName.length >= 2 && query.includes(sName)) return true;
+      // name 包含 query
+      if (sName.includes(query)) return true;
+      // alias 包含 query 或 query 包含 alias
+      if (aliasStr && (aliasStr.includes(query) || query.includes(aliasStr))) return true;
+      // SKU 包含 query
+      if (s.sku.toLowerCase().includes(query)) return true;
+      return false;
     });
     const uniqueMap = new Map();
     candidates.forEach(c => { if (!uniqueMap.has(c.sku)) uniqueMap.set(c.sku, c); });
